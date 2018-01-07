@@ -135,7 +135,7 @@
                         if( isset($_POST['search_date_from']) ) {
                             $date_from = $_POST['search_date_from']." 00:00:00";
                             $date_to = $_POST['search_date_to']." 23:59:59"; 
-                            $query = "SELECT * FROM events WHERE event_date_time >= '".$date_from."' and event_date_time <= '".$date_to."'";
+                            $query = "SELECT * FROM events, event_categories, addresses WHERE events.address_id = addresses.address_id and events.event_category_id = event_categories.category_id and event_date_time >= '".$date_from."' and event_date_time <= '".$date_to."'";
                             $res = mysql_query($query);
                         }
                         while ($row = mysql_fetch_assoc($res)) {
@@ -170,50 +170,85 @@
                             <?php echo $row['last_purchase_date']; ?>
                           </td>
                           <td style="min-width:100px">
-                            <?php 
-                            // A "book ticket" button will only appear if the user can still book a ticket for the event
-                            // This applies if there are still tickets left and the last purchase date still hasn't passed.
+                              <?php 
+                            // User can only book a ticket if it is still before the last purchase date,
                             $date_time_now = date("Y-m-d h:i:s"); 
                             $tickets_remaining = $row['tickets_remaining'];
-                            if ($date_time_now < $row['last_purchase_date'] && $tickets_remaining > 0 && $row['created_by_user_id'] != $_SESSION['user']){
+                            if ($date_time_now < $row['last_purchase_date'] && $tickets_remaining > 0){
                             ?>
-                            <form name="myForm" method="post" action="model/book_ticket.php" onsubmit="bookTicket()" autocomplete="off">
-                                <!-- Event ID and ticket remaining values are sent in the POST request to update the events row
-                                 and to insert a row to the event bookings table -->
-                              <input type="hidden" name="eventId" class="form-control" value="<?php echo $row['event_id'] ?>" />
-                              <input type="hidden" name="end_date" class="form-control" value="<?php echo $row['tickets_remaining'] ?>" />                                               
-                              <input type="hidden" name="tickets_remaining" class="form-control" value="<?php echo $row['tickets_remaining'] ?>" />
-                              <button type="submit" class="btn btn-sm btn-block btn-primary" name="btn-signup">Book ticket
-                              </button>                                   
-                            </form>
-                            <?php 
+                              <form name="myForm" method="post" action="model/book_ticket.php" onsubmit="return bookTicket()" autocomplete="off">
+                                <input type="hidden" name="eventId" class="form-control" value="<?php echo $row['event_id'] ?>" />
+                                <input type="hidden" name="end_date" class="form-control" value="<?php echo $row['tickets_remaining'] ?>" />                                               
+                                <input type="hidden" name="tickets_remaining" class="form-control" value="<?php echo $row['tickets_remaining'] ?>" />
+                                <input type="number" name="tickets_bought" list="tickets_bought" value="">
+                                <datalist id="tickets_bought">
+                                  <?php
+                                $max_bookable = 10;
+                                // The maximum number of tickets that can be booked is 10. 
+                                // If the remaining tickets is less than 10 then only up to that amount can be booked.
+                                if($tickets_remaining < $max_bookable)
+                                $max_bookable = $tickets_remaining < $max_bookable;
+                                $count = 1;
+                                while ($count <= $max_bookable) {
+                                ?>
+                                  <option value = "<?php echo $count++; ?>" />                           
+                                  <?php
+                                }
+                                ?>
+                                </datalist>
+                                <input type="hidden" name="max_bookable" class="form-control" value="<?php echo $max_bookable?>" />
+                                <button type="submit" class="btn btn-sm btn-block btn-primary" name="btn-signup">Book ticket(s)
+                                </button>                                   
+                              </form>
+                              <?php 
                             }
                             else{
+                                // Book ticket button will not be shown if there aren't any tickest remaining or 
+                                // it is past the last purchase date.
                                 echo "N/A - ";
-                                // HTML that appears for the cases where a ticket cannot be booked.
-                                if ($tickets_available <= 0)
+                                if ($tickets_remaining <= 0)
                                     echo "Sold out.";
-                                if ($today > $end_date)
+                                if ($date_time_now > $row['last_purchase_date'])
                                     echo "Past end date.";
                             }
                             ?>
-                          </td>
-                        </tr> 
-                        <?php // while loop closing brace
+                            </td>
+                          </tr> 
+                          <?php // while loop closing brace
                         }?>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>                   
-                </body>
-              </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>                   
+                  </body>
+                </div>
+            </div>
           </div>
         </div>
-      </div>
-      <script src="assets/jquery-1.11.3-jquery.min.js">
-      </script>
-      <script src="assets/js/bootstrap.min.js">
-      </script>
-      </body>
-    </html>
+        <script src="assets/jquery-1.11.3-jquery.min.js">
+        </script>
+        <script src="assets/js/bootstrap.min.js">
+        </script>
+        </body>
+      </html>
   <?php ob_end_flush(); ?>
+<script type="text/javascript">
+  
+        function bookTicket(){
+        // Validation checks for ticket count selection
+        // User can only book up to a maximum of 10 tickets
+        // A negative or empty input will not be accepted and the user will be 
+        // prompted to enter a valid input.
+        var a = document.forms["myForm"]["tickets_bought"].value;
+        var b = document.forms["myForm"]["max_bookable"].value;
+        if(a <= 0 || a == ""){
+          alert("Please enter a valid number of tickets to buy. " + a);
+          return false;
+        }
+        else{
+          alert("Your ticket has been booked!");
+        }
+      }
+    </script>   
+
+</script>

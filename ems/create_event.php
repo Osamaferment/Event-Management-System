@@ -218,9 +218,6 @@
 
     var str = "";
 
-    if(!categories_list.search(d))
-      str = str.concat("Category must be selected from list.\n");
-
     if (a == "" || b == "" || c1 == "" || c2 == "" || d == ""  || e == "" || x == ""  || y == "") {
       str = str.concat("Please correctly fill in all the fields");
       if ( y > x )

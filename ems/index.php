@@ -69,8 +69,8 @@
               <hr />
             </div>
             <?php
-if ( isset($errMSG) ) {
-?>
+          if ( isset($errMSG) ) {
+            ?>
             <div class="form-group">
               <div class="alert alert-danger">
                 <span class="glyphicon glyphicon-info-sign">
